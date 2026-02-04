@@ -74,16 +74,18 @@ class BoustrophedonController(Node):
     def generate_waypoints(self):
         waypoints = []
         y = 8.0  # Start higher in the window
-        
+        going_right = True
+
         while y >= 3.0:
-            if len(waypoints) % 2 == 0:
+            if going_right:
                 waypoints.append((2.0, y))
                 waypoints.append((9.0, y))
             else:
                 waypoints.append((9.0, y))
                 waypoints.append((2.0, y))
             y -= self.spacing
-        
+            going_right = not going_right
+
         return waypoints
 
     def calculate_cross_track_error(self):
@@ -155,11 +157,20 @@ class BoustrophedonController(Node):
         linear_error_derivative = (distance - self.prev_linear_error) / dt
         angular_error_derivative = (angular_error - self.prev_angular_error) / dt
 
-        linear_velocity = self.Kp_linear * distance + self.Kd_linear * linear_error_derivative
         angular_velocity = self.Kp_angular * angular_error + self.Kd_angular * angular_error_derivative
 
+        # Turn in place first — only move forward once aligned
+        if abs(angular_error) > 0.1:
+            linear_velocity = 0.0
+        else:
+            linear_velocity = self.Kp_linear * distance + self.Kd_linear * linear_error_derivative
+
+        # Cap velocities for smooth motion
+        linear_velocity = max(0.0, min(linear_velocity, 2.0))
+        angular_velocity = max(-2.0, min(angular_velocity, 2.0))
+
         vel_msg = Twist()
-        vel_msg.linear.x = min(linear_velocity, 2.0)
+        vel_msg.linear.x = linear_velocity
         vel_msg.angular.z = angular_velocity
         self.velocity_publisher.publish(vel_msg)
 
