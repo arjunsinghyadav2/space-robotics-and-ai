@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  space-robotics-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: space-robotics-ai:humble
+    container_name: srai-workspace
+
+    # Enable GUI applications (X11 forwarding)
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - LIBGL_ALWAYS_SOFTWARE=1
+
+    volumes:
+      # Mount the assignments directory
+      - ./assignments:/workspace/src:rw
+      # Mount X11 socket for GUI (Linux)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Persist bash history
+      - bash_history:/root/.bash_history
+
+    # Network mode for better ROS2 communication
+    network_mode: host
+
+    # Keep container running
+    stdin_open: true
+    tty: true
+
+    # Privileged mode for device access (if needed)
+    privileged: true
+
+    command: /bin/bash
+
+volumes:
+  bash_history:
