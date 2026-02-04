@@ -37,7 +37,8 @@ The original controller computed linear and angular velocity simultaneously. Thi
 - Angular velocity clamped to `[-2.0, 2.0]` — prevents jerky snapping during turns
 
 ### 4. PD Controller Tuning
-
+| Parameter | Original | Tuned | Rationale |
+|-----------|----------|-------|-----------|
 | `Kp_linear` | 10.0 | 2.0 | 10.0 caused overshooting at waypoints. 2.0 gives smooth deceleration |
 | `Kd_linear` | 0.1 | 0.3 | Higher damping smooths velocity on straight segments |
 | `Kp_angular` | 5.0 | 4.0 | Slightly reduced to lower oscillation at corners |
