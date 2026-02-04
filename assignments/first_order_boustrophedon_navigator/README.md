@@ -75,19 +75,17 @@ spacing:    1.0
 
 ## Results
 
-**TurtleSim — live trajectory** (uniform horizontal sweeps with an initial diagonal from the spawn point to the first waypoint):
-
 ![TurtleSim Trajectory](lawnmover_controller.png)
 
 **Planned vs actual trajectory** (red dots = waypoints, blue line = path taken):
 
 ![Trajectory Plot](../trajectory.png)
 
-**Cross-track error over time** — peaks at approximately 0.09, well below the 0.2 target. Periodic drops to zero correspond to waypoint transitions where the error resets:
+**Cross-track error over time**
 
 ![Cross-Track Error](../cross_track_error.png)
 
-**Velocity profiles** — linear velocity (blue) runs at the 2.0 cap on straights and drops to zero during turn-in-place phases; angular velocity (orange) shows sharp spikes capped at ±2.0 only during turns:
+**Velocity profiles**
 
 ![Velocity Profiles](../velocity_profiles.png)
 
