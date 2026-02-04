@@ -5,4 +5,4 @@
       Kd_linear: 0.3
       Kp_angular: 4.0
       Kd_angular: 1.0
-      spacing: 1.0
+      spacing: 0.5
