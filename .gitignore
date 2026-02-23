@@ -1,0 +1,25 @@
+# ROS2 / colcon build artifacts
+build/
+install/
+log/
+**/build/
+**/install/
+**/log/
+
+# Python cache / packaging artifacts
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

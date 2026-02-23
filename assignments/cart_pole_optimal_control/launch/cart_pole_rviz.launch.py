@@ -4,16 +4,23 @@ from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 import os
+import shutil
 
 def generate_launch_description():
     pkg_share = FindPackageShare('cart_pole_optimal_control').find('cart_pole_optimal_control')
     urdf_model_path = os.path.join(pkg_share, 'models', 'cart_pole', 'model.urdf')
+
+    # Keep launch compatible with both Gazebo command names.
+    if shutil.which('gz'):
+        sim_cmd = ['gz', 'sim', '-r', '-s', 'empty.sdf']
+    else:
+        sim_cmd = ['ign', 'gazebo', '-r', '-s', 'empty.sdf']
     
     # Create and return launch description
     return LaunchDescription([
         # Gazebo (headless mode)
         ExecuteProcess(
-            cmd=['gz', 'sim', '-r', '-s', 'empty.sdf'],  # -s for headless mode
+            cmd=sim_cmd,  # -s for headless mode
             output='screen'
         ),
 
