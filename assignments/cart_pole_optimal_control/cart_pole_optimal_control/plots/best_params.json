@@ -1,0 +1,26 @@
+{
+  "device": "cuda",
+  "best": {
+    "id": 0,
+    "x_tol_m": 0.5,
+    "x_dot_tol_mps": 1.0,
+    "theta_tol_rad": 0.2,
+    "theta_dot_tol_rps": 0.5,
+    "q_theta_over_x": 6.249999999999999,
+    "q_theta_dot_over_x_dot": 4.0,
+    "r_scale": 0.5,
+    "q": [
+      4.0,
+      1.0,
+      24.999999999999996,
+      4.0
+    ],
+    "r": 0.05,
+    "survival_s": 400.0,
+    "max_cart_m": 1.4128254652023315,
+    "max_theta_deg": 31.928133010864258,
+    "avg_abs_u": 23.90964126586914,
+    "score": 397.937744140625,
+    "success": true
+  }
+}

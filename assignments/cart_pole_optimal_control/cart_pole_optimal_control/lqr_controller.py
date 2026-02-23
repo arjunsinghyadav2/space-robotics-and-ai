@@ -35,8 +35,8 @@ class CartPoleLQRController(Node):
         ])
         
         # LQR cost matrices
-        self.Q = np.diag([12.0, 6.0, 120.0, 100.0])  # [x, x_dot, theta, theta_dot]
-        self.R = np.array([[0.14]])  # Control effort cost
+        self.Q = np.diag([4.0, 1.0, 25.0, 4.0])  # [x, x_dot, theta, theta_dot]
+        self.R = np.array([[0.05]])  # Control effort cost
         
         # Compute LQR gain matrix
         self.K = self.compute_lqr_gain()
@@ -68,7 +68,7 @@ class CartPoleLQRController(Node):
         # Control loop timer
         self.timer = self.create_timer(0.01, self.control_loop)
 
-        self.MAX_SIMULATION_TIME = 120.0  # Set to desired duration
+        self.MAX_SIMULATION_TIME = 400.0  # Set to desired duration
         
         self.get_logger().info('Cart-Pole LQR Controller initialized')
     
