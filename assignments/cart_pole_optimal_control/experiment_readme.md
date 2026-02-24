@@ -82,8 +82,3 @@ Bryson's Rule requires physical insight, not just physical limits.
 Setting tolerances to the hardware limits (x_max=2.5m) gives a controller calibrated for don't hit the wall - too relaxed for disturbance rejection. The tolerances should reflect desired performance, not just survival boundaries. The score function shapes what best means. 
 score = survival - 0.5·cart - 0.02·theta - 0.03·effort
 Cart displacement is penalized 25× more than theta per degree/meter. This is why tight x_tol matters most - the score function rewards reducing cart displacement the most.
-
-#### Final Parameters
-Q = diag([4.0, 1.0, 25.0, 4.0])  # x_tol=0.5m, theta_tol=0.2rad (Bryson-derived)
-R = 0.05, r_scale=0.5 - aggressive control
-These were selected through a systematic GPU-accelerated sweep of 12,096 Bryson-tolerance combinations, validated across 3 random earthquake seeds, choosing the configuration with the highest worst-case score.
