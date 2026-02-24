@@ -73,20 +73,21 @@ Cart displacement is penalized 25x more than theta per degree/meter. This is why
 
 ## RL - DQN
 DQN has 2 discrete actions (push left/right with fixed force) against a 15N earthquake. LQR applies proportional continuous force. The DQN is fighting a much harder battle, limited to ±10N bang-bang type occilation, when the earthquake pushes at 15N, the best possible response is 10N back. It's always 5N short. The agent learned good policy (perfect CartPole without earthquake), but the action space fundamentally can't match the disturbance magnitude.
-
+![DQN Reward Shapping with Thresholds](cart_pole_optimal_control/dqn/positiveepisodereward_2.png)
 #### Reward Shaping
-- I updated reward with alive bonus, which is everystep the pole is within threshold and upright add +1. Total reward is alive+ angle + position 
-- I added +5 if the episode ends due to timeout or survival which adds strong negative reward if dead and positive reward for surviving full horizon.
+- updated reward with added alive bonus, which is everystep the pole is within threshold and upright add +1. Total reward is alive+ angle + position 
+- added +5 if the episode ends due to timeout or survival which adds strong negative reward if dead and positive reward for surviving full horizon.
 - In original implementation it had an issue where truncated which is time-limit success was being treated like failure.
 - Normalized angle and position rewards by their thresholds, then aligned thresholds to LQR limits (x=2.5m, theta=45deg) for fair comparison.
 - The cart seems to occilate or is the policy learned to balance pole, and these occilations grow over time to compensate for greater and greater previous stabelization attempt, eventually failing, so I added velocity penalties theta_dot, later x_dot to reduce oscillation and cart chattering and that helped.
 
-Scenario 1: With earthquake vs without earthquake
+##### Scenario 1: With earthquake vs without earthquake
 -  No Earthquake, Pass rate= 100%, Survival steps=240/240
 -  With 15N Earthquake Pass rate= 0%(every episode), Steps =	57.7 mean (42-79 range)
 
-Scenario 2: With Failure penalty changes which adds positive reward for survival with timeout and negative only for dead.
+##### Scenario 2: With Failure penalty changes which adds positive reward for survival with timeout and negative only for dead.
 - Pass rate - 0-40%(avg 10% pass rate) - Steps 153 mean (72-240)
+![DQN Reward Shapping with Thresholds](cart_pole_optimal_control/dqn/dqn_training_curve__positiveepisodereward.png)
 
 #### Itterative Improvement: 
 
