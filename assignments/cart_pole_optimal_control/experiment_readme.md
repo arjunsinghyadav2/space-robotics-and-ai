@@ -48,7 +48,7 @@ Tightening x_tol is the most powerful lever. Setting x_tol=0.5m raises Q[x] from
 x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
 - Q = [4.0, 1.0, 25.0, 4.0]  R = 0.05
 - q_theta / q_x = 6.25x  (vs 69x from naive Bryson or manual tunning I tried)
-- Survived 400s (full duration)
+- Survived 400s (full MAX duration assigned, this was not consistent each time but 3/5 trials led to full max duration)
 - Max cart displacement: 1.41m within +-2.5m limit
 - Max pole angle: 31.9Deg within 45Deg limit
 - Avg control effort: 23.9N
