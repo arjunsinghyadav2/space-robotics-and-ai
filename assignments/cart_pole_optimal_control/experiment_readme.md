@@ -55,7 +55,7 @@ x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
 - Avg control effort: 23.9N
 ![Best tuned run](cart_pole_optimal_control/plots/auto_tunned_v1{4,1,25,4-0.05}.png)
 ![Tuning log plot](cart_pole_optimal_control/plots/log.png)
-I am not sure why my stability was consistently low: TODO
+I am not able to figure out why my stability was consistently low: TODO
 
 #### Key Learnings
 The Q ratio matters more than the Q magnitude.
