@@ -23,3 +23,8 @@ venv/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Ignore trained model files
+*.pth
+*.csv
+*.json

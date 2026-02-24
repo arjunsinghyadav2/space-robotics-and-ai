@@ -4,15 +4,22 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
+import csv
+import json
+from pathlib import Path
 
-# Initialize environment with visualization
-env = gym.make("CartPole-v1", render_mode="human")  
-state_dim = env.observation_space.shape[0] + 1  # Ensure state_dim = 5 (4 original + earthquake force)
+# Initialize environment (headless by default).
+env = gym.make("CartPole-v1")
+state_dim = env.observation_space.shape[0] + 1  # 4 original + earthquake force
 action_dim = env.action_space.n
 
 # Load trained model
 agent = DQNAgent(state_dim, action_dim)
-agent.q_network.load_state_dict(torch.load("dqn_cartpole_trained_default.pth"))
+_root = Path(__file__).resolve().parent
+model_filename = _root / "dqn_cartpole_earthquake.pth"
+agent.q_network.load_state_dict(
+    torch.load(str(model_filename), map_location=torch.device("cpu"), weights_only=True)
+)
 agent.q_network.eval()
 
 # Earthquake Force Parameters
@@ -34,11 +41,12 @@ def generate_earthquake_force(time):
 
 # Run evaluation episodes
 num_episodes = 10
+show_plots = False
+episode_rows = []
 for episode in range(1, num_episodes + 1):
     state, _ = env.reset()
     total_reward = 0
     time_step = 0
-    
     angle_deviation = deque(maxlen=1000)
     cart_position = deque(maxlen=1000)
     control_effort = deque(maxlen=1000)
@@ -48,24 +56,28 @@ for episode in range(1, num_episodes + 1):
         earthquake = generate_earthquake_force(time_step * env_timestep)  # Store in a separate variable
         state_with_force = np.append(state[:4], earthquake)
         action = agent.select_action(state_with_force, evaluate=True)
-
         # Step the environment
         next_state, reward, terminated, truncated, _ = env.step(action)
 
-        # Manually modify cart position based on earthquake force (only if the environment allows direct modification)
-        next_state[0] += earthquake * env_timestep  # Apply earthquake force effect
+        # Apply earthquake as external acceleration on cart velocity.
+        dyn_state = env.unwrapped.state
+        total_mass = env.unwrapped.masscart + env.unwrapped.masspole
+        dyn_state[1] += (earthquake / total_mass) * env_timestep
+        env.unwrapped.state = dyn_state
+        next_state = np.array(dyn_state, dtype=np.float32)
 
-        done = terminated or truncated
+        violated = (
+            abs(next_state[0]) > env.unwrapped.x_threshold
+            or abs(next_state[2]) > env.unwrapped.theta_threshold_radians
+        )
+        done = terminated or truncated or violated
 
-        # Extract relevant state info
-        cart_x = abs(next_state[0])  # Cart position
-        pole_theta = abs(next_state[2])  # Pole angle deviation
-
-        # Store performance data
+        cart_x = abs(next_state[0])
+        pole_theta = abs(next_state[2])
         cart_position.append(cart_x)
         angle_deviation.append(pole_theta)
-        control_effort.append(10 if action == 1 else -10)  # Force applied per action
-        earthquake_force.append(earthquake)  # Append correctly now
+        control_effort.append(10 if action == 1 else -10)
+        earthquake_force.append(earthquake)
 
         state = next_state
         time_step += 1
@@ -75,27 +87,55 @@ for episode in range(1, num_episodes + 1):
             break
 
     print(f"Evaluation Episode {episode}, Total Reward: {total_reward}")
-    
-    # Plot after each episode
-    fig, axs = plt.subplots(2, 2, figsize=(10, 6))
-    axs[0, 0].plot(cart_position, label="Cart Position (m)", color='blue')
-    axs[0, 0].set_title("Cart Position")
-    axs[0, 0].legend()
+    episode_rows.append(
+        {
+            "episode": episode,
+            "survival_steps": time_step,
+            "total_reward": float(total_reward),
+            "max_cart_m": float(max(cart_position) if len(cart_position) > 0 else 0.0),
+            "max_theta_rad": float(max(angle_deviation) if len(angle_deviation) > 0 else 0.0),
+            "avg_abs_u": float(np.mean(np.abs(control_effort)) if len(control_effort) > 0 else 0.0),
+})
 
-    axs[0, 1].plot(angle_deviation, label="Pole Angle Deviation (°)", color='red')
-    axs[0, 1].set_title("Pole Angle Deviation")
-    axs[0, 1].legend()
-    
-    axs[1, 0].plot(earthquake_force, label="Earthquake Force (N)", color='green')
-    axs[1, 0].set_title("Earthquake Disturbance")
-    axs[1, 0].legend()
+    if show_plots:
+        fig, axs = plt.subplots(2, 2, figsize=(10, 6))
+        axs[0, 0].plot(cart_position, label="Cart Position (m)", color="blue")
+        axs[0, 0].set_title("Cart Position")
+        axs[0, 0].legend()
 
-    axs[1, 1].plot(control_effort, label="Control Force (N)", color='magenta')
-    axs[1, 1].set_title("Control Effort")
-    axs[1, 1].legend()
+        axs[0, 1].plot(angle_deviation, label="Pole Angle Deviation (rad)", color="red")
+        axs[0, 1].set_title("Pole Angle Deviation")
+        axs[0, 1].legend()
 
+        axs[1, 0].plot(earthquake_force, label="Earthquake Force (N)", color="green")
+        axs[1, 0].set_title("Earthquake Disturbance")
+        axs[1, 0].legend()
 
-    plt.tight_layout()
-    plt.show()
+        axs[1, 1].plot(control_effort, label="Control Force (N)", color="magenta")
+        axs[1, 1].set_title("Control Effort")
+        axs[1, 1].legend()
+        plt.tight_layout()
+        plt.show()
 
 env.close()
+
+with open(_root / "dqn_eval_episodes.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(
+        f,
+        fieldnames=["episode", "survival_steps", "total_reward", "max_cart_m", "max_theta_rad", "avg_abs_u"],
+    )
+    writer.writeheader()
+    writer.writerows(episode_rows)
+
+summary = {
+    "episodes": num_episodes,
+    "pass_rate": float(np.mean([r["survival_steps"] >= 500 for r in episode_rows])) if episode_rows else 0.0,
+    "survival_steps_mean": float(np.mean([r["survival_steps"] for r in episode_rows])) if episode_rows else 0.0,
+    "reward_mean": float(np.mean([r["total_reward"] for r in episode_rows])) if episode_rows else 0.0,
+    "max_cart_mean_m": float(np.mean([r["max_cart_m"] for r in episode_rows])) if episode_rows else 0.0,
+    "max_theta_mean_rad": float(np.mean([r["max_theta_rad"] for r in episode_rows])) if episode_rows else 0.0,
+    "avg_abs_u_mean": float(np.mean([r["avg_abs_u"] for r in episode_rows])) if episode_rows else 0.0,
+}
+with open(_root / "dqn_eval_summary.json", "w", encoding="utf-8") as f:
+    json.dump(summary, f, indent=2)
+print(json.dumps(summary, indent=2))

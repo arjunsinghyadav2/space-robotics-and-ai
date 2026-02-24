@@ -1,17 +1,30 @@
 from dqn_agent import DQNAgent
 import gymnasium as gym
 import numpy as np
-import torch
 import random
+import torch
+import csv
 import matplotlib.pyplot as plt
+from pathlib import Path
+
+# Reproducibility
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(SEED)
+    print(f"CUDA available: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA not available, using CPU")
 
 # Initialize environment
 env = gym.make("CartPole-v1")
 state_dim = env.observation_space.shape[0] + 1  # Now 5 states (4 original + 1 earthquake force)
 action_dim = env.action_space.n
 
-# Initialize DQN Agent
-agent = DQNAgent(state_dim, action_dim)
+# Initialize DQN Agent (decay is per-episode, not per-step)
+agent = DQNAgent(state_dim, action_dim, lr=5e-4, decay=0.9995, min_epsilon=0.05)
 
 # Earthquake Force Parameters
 num_waves = 5
@@ -35,6 +48,9 @@ num_episodes = 15000
 total_rewards = []
 steps_per_episode = []
 epsilon_values = []
+_root = Path(__file__).resolve().parent
+model_filename = _root / "dqn_cartpole_earthquake.pth"
+log_filename = _root / "dqn_training_log.csv"
 
 time_step = 0
 for episode in range(1, num_episodes + 1):
@@ -45,36 +61,45 @@ for episode in range(1, num_episodes + 1):
     for t in range(1000):
         earthquake_force = generate_earthquake_force(time_step * env_timestep)
 
-        # Apply earthquake force to the environment
-        env.unwrapped.force_mag = env.unwrapped.force_mag + earthquake_force  
-
         # Append earthquake force to the state
         state_with_force = np.append(state, earthquake_force)  
 
         action = agent.select_action(state_with_force, evaluate=False)
         next_state, _, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
+        # Apply earthquake as external acceleration on cart velocity.
+        # Position integrates naturally on the next env.step().
+        dyn_state = env.unwrapped.state
+        total_mass = env.unwrapped.masscart + env.unwrapped.masspole
+        dyn_state[1] += (earthquake_force / total_mass) * env_timestep
+        env.unwrapped.state = dyn_state
+        next_state = np.array(dyn_state, dtype=np.float32)
+
+        violated = (
+            abs(next_state[0]) > env.unwrapped.x_threshold
+            or abs(next_state[2]) > env.unwrapped.theta_threshold_radians
+        )
+
+        done = terminated or truncated or violated
 
         # Extract key values from next_state
         cart_position = abs(next_state[0])  # Cart position (closer to 0 is better)
         pole_angle = abs(next_state[2])  # Pole angle (smaller is better)
 
         # **Custom Reward Function**
-        base_reward = 1.0  # Small reward for surviving
-        pole_stability = 1.0 - (2.5 * pole_angle)  # Penalize pole angle deviation
-        cart_stability = 1.0 - (0.5 * cart_position)  # Penalize cart displacement
-        
-        # Calculate total reward
-        reward = base_reward + pole_stability + cart_stability
-
-        # Clip reward to avoid negative values
-        reward = max(reward, 0)
+        if done:
+            reward = -10.0  # Strong death penalty so the agent learns to survive
+        else:
+            base_reward = 1.0  # Small reward for surviving
+            pole_stability = 1.0 - (2.5 * pole_angle)  # Penalize pole angle deviation
+            cart_stability = 1.0 - (0.5 * cart_position)  # Penalize cart displacement
+            reward = base_reward + pole_stability + cart_stability
 
         # Append earthquake force to the next state
         next_state_with_force = np.append(next_state, earthquake_force)
 
         agent.store_transition(state_with_force, action, reward, next_state_with_force, done)
-        agent.train()
+        if time_step % 4 == 0:
+            agent.train()
 
         state = next_state
         time_step += 1
@@ -84,6 +109,7 @@ for episode in range(1, num_episodes + 1):
         if done:
             break
 
+    agent.decay_epsilon()
     agent.update_target_model()
     total_rewards.append(total_reward)
     steps_per_episode.append(steps)
@@ -91,7 +117,14 @@ for episode in range(1, num_episodes + 1):
     print(f"Episode {episode}, Total Reward: {total_reward:.4f}, Steps: {steps}, Exploration Rate (ε): {agent.epsilon:.6f}")
 
 # Save model at the end of training
-agent.save_model()
+agent.save_model(str(model_filename))
+
+with open(log_filename, "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["episode", "total_reward", "steps", "epsilon"])
+    for i, (r, s, e) in enumerate(zip(total_rewards, steps_per_episode, epsilon_values), start=1):
+        writer.writerow([i, f"{r:.6f}", s, f"{e:.6f}"])
+print(f"Training log saved as {log_filename}")
 
 env.close()
 
@@ -115,4 +148,6 @@ plt.xlabel("Episode")
 plt.ylabel("Epsilon")
 plt.legend()
 
-plt.show()
+plt.tight_layout()
+plt.savefig(_root / "dqn_training_curve.png", dpi=100)
+print(f"Training curve saved to {_root / 'dqn_training_curve.png'}")
