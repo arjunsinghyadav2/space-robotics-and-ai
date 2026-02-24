@@ -47,7 +47,7 @@ def generate_earthquake_force(time):
     return force
 
 # Training Loop
-num_episodes = 10000
+num_episodes = 20000
 total_rewards = []
 steps_per_episode = []
 epsilon_values = []

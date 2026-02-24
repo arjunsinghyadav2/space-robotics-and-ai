@@ -43,7 +43,7 @@ What I found:
 x_tol	Pass rate
 0.5m (tight)	21%
 2.5m (loose)	8%
-Tightening x_tol is the most powerful lever. Setting x_tol=0.5m raises Q[x] from 0.16 to 4.0 - the controller fights cart drift 25× harder than with the naive Bryson baseline.
+Tightening x_tol is the most powerful lever. Setting x_tol=0.5m raises Q[x] from 0.16 to 4.0 - the controller fights cart drift 25x harder than with the naive Bryson baseline.
 
 #### Best configuration found:
 x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
@@ -68,4 +68,40 @@ Across all sweeps, lower R (less penalty on control effort) always wins. The sys
 Bryson's Rule requires physical insight, not just physical limits.
 Setting tolerances to the hardware limits (x_max=2.5m) gives a controller calibrated for don't hit the wall - too relaxed for disturbance rejection. The tolerances should reflect desired performance, not just survival boundaries. The score function shapes what best means. 
 score = survival - 0.5·cart - 0.02·theta - 0.03·effort
-Cart displacement is penalized 25× more than theta per degree/meter. This is why tight x_tol matters most - the score function rewards reducing cart displacement the most.
+Cart displacement is penalized 25x more than theta per degree/meter. This is why tight x_tol matters most - the score function rewards reducing cart displacement the most.
+
+
+## RL - DQN
+DQN has 2 discrete actions (push left/right with fixed force) against a 15N earthquake. LQR applies proportional continuous force. The DQN is fighting a much harder battle, limited to ±10N bang-bang type occilation, when the earthquake pushes at 15N, the best possible response is 10N back. It's always 5N short. The agent learned good policy (perfect CartPole without earthquake), but the action space fundamentally can't match the disturbance magnitude.
+
+#### Reward Shaping
+- I updated reward with alive bonus, which is everystep the pole is within threshold and upright add +1. Total reward is alive+ angle + position 
+- I added +5 if the episode ends due to timeout or survival which adds strong negative reward if dead and positive reward for surviving full horizon.
+- In original implementation it had an issue where truncated which is time-limit success was being treated like failure.
+- Normalized angle and position rewards by their thresholds, then aligned thresholds to LQR limits (x=2.5m, theta=45deg) for fair comparison.
+- The cart seems to occilate or is the policy learned to balance pole, and these occilations grow over time to compensate for greater and greater previous stabelization attempt, eventually failing, so I added velocity penalties theta_dot, later x_dot to reduce oscillation and cart chattering and that helped.
+
+Scenario 1: With earthquake vs without earthquake
+-  No Earthquake, Pass rate= 100%, Survival steps=240/240
+-  With 15N Earthquake Pass rate= 0%(every episode), Steps =	57.7 mean (42-79 range)
+
+Scenario 2: With Failure penalty changes which adds positive reward for survival with timeout and negative only for dead.
+- Pass rate - 0-40%(avg 10% pass rate) - Steps 153 mean (72-240)
+
+#### Itterative Improvement: 
+
+- Currently exploration decay is set to 0.999 with 0.1 epsilon, and the total episodes are 15000 by default, this was updated because the decay leads the exploration to end within the first 800 episodes.
+
+- Earthquake force:
+      # Apply earthquake force to the environment
+        env.unwrapped.force_mag = env.unwrapped.force_mag + earthquake_force  
+
+  The force is applied in the code like below but it modifies position only, not velocity. Which in the playback looks like an impulse on position, teleporting the cart sideways, rather than a physical force. Ideally earthquake force should affect x_dot, and x not just x.
+
+- Eval and Train Threeshold for X and Theta
+ DQN current implementation
+  max_theta: 0.21-0.25 rad, all just over 12deg, which led to end of episode dying from theta every time quickly.
+  max_cart: 0.47-0.68m, well within 2.4m and nowhere close to cart limit
+The agent dies exclusively from the pole angle. The 12deg theta threshold. And the reward function reinforces this asymmetry, angle_bonus normalizes by ~0.21 rad, so small angle changes create huge reward gradients, while position_bonus normalizes by 2.4m, so the cart just drift freely.
+
+For comparison with your LQR thresholds which has 2.5m cart limit, 45deg pole limits. The DQN is operating under a 3.75x tighter angle constraint than LQR. That's not a 1:1 comparison.

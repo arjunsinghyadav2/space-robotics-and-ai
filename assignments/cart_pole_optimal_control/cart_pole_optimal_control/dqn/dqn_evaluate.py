@@ -10,10 +10,11 @@ from pathlib import Path
 
 # Initialize environment.
 # Set render_mode="human" if you want a live pygame window.
-env = gym.make("CartPole-v1", render_mode=None)
+env = gym.make("CartPole-v1", render_mode="human")
 # Aligned RL termination limits with LQR assignment limits for fair comparison.
 env.unwrapped.x_threshold = 2.5
 env.unwrapped.theta_threshold_radians = np.deg2rad(45.0)
+env._max_episode_steps = 500
 state_dim = env.observation_space.shape[0] + 1  # 4 original + earthquake force
 action_dim = env.action_space.n
 
@@ -45,7 +46,7 @@ def generate_earthquake_force(time):
 
 # Run evaluation episodes
 num_episodes = 10
-show_plots = False
+show_plots = True
 episode_rows = []
 for episode in range(1, num_episodes + 1):
     state, _ = env.reset()
@@ -133,7 +134,7 @@ with open(_root / "dqn_eval_episodes.csv", "w", newline="", encoding="utf-8") as
 
 summary = {
     "episodes": num_episodes,
-    "pass_rate": float(np.mean([r["survival_steps"] >= 500 for r in episode_rows])) if episode_rows else 0.0,
+    "pass_rate": float(np.mean([r["survival_steps"] >= env._max_episode_steps for r in episode_rows])) if episode_rows else 0.0,
     "survival_steps_mean": float(np.mean([r["survival_steps"] for r in episode_rows])) if episode_rows else 0.0,
     "reward_mean": float(np.mean([r["total_reward"] for r in episode_rows])) if episode_rows else 0.0,
     "max_cart_mean_m": float(np.mean([r["max_cart_m"] for r in episode_rows])) if episode_rows else 0.0,
