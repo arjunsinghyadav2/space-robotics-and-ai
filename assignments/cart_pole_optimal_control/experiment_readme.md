@@ -3,20 +3,7 @@ Starting Point - The Default Parameters were part of the repo as is
 Q = diag([1.0, 1.0, 10.0, 10.0])  R = 0.1
 The way I read this is a 1m cart error is penalized equally to a 1 rad/s angular velocity error, which makes no physical sense.
 
-#### Iteration 1 - Uniform Scale Sweep (6,727 runs via GPU)
-What I did: 
-Scaled the entire Q matrix up and down uniformly (q_scale 0.4-2.2) while varying R (r_scale 0.2-1.8).
-
-What I found:
-100% pass rate across all combinations - the system is robust
-Best config: highest Q scale (2.2) + lowest R (0.2) - cart=0.32m, theta=5.9Deg
-The counter-intuitive result: more aggressive Q + less R penalty - less actual control effort spent (23.3N-20.6N)
-Why that happens: A lazy controller (low Q, high R) lets deviations grow, then needs large catch-up forces. An aggressive controller (high Q, low R) corrects immediately before deviations build, so the corrections are always small.
-
-What it missed:
-This sweep only scaled Q uniformly. It never asked: what if I care more about the pole angle than the cart position, or vice versa? That's the competing-objective trade-off the assignment specifically asks for.
-
-#### Iteration 2 - Competing Objectives Sweep (6,727 runs)
+#### Iteration 1 - Competing Objectives Sweep (6,727 runs)
 What I did:
  Independently scaled the cart states [x, x_dot] and angle states [theta, theta_dot] to reveal the trade-off.
 
@@ -29,9 +16,9 @@ The trade-off is real: prioritizing pole angle lets the cart drift; prioritizing
 
 assignment connection: This directly addresses the requirement to analyze how Q matrix weights affect different states and document trade-offs between objectives.
 
-#### Iteration 3 - Bryson's Rule as Baseline Major Failure
-What I tried: Replace the arbitrary Q baseline with Bryson's Rule - the principled method:
-
+#### Iteration 2 - Bryson's Rule as Baseline Major Failure
+What I tried: 
+  Replace the arbitrary Q baseline with Bryson's Rule - the principled method:
 
 Q[i] = 1 / (max_acceptable_deviation[i])**2
 
@@ -43,7 +30,7 @@ Why it failed: Bryson's rule hardcoded q_theta / q_x = 69.4x. The controller was
 
 The lesson: Bryson's Rule is only as good as the tolerances you feed it. Choosing theta_max = 0.3 rad (17Deg) and x_max = 2.5 m (the full physical range) implicitly told the controller that the pole falling is 69 times more catastrophic per unit than the cart drifting. In an earthquake scenario where both are attacked simultaneously, that is wrong.
 
-#### Iteration 4: Direct Bryson Tolerance Sweep 12,096 runs
+#### Iteration 3: Direct Bryson Tolerance Sweep 12,096 runs
 What I did: 
 Instead of picking one set of tolerances, sweep them directly. Let the data tell you which tolerances work.
 
