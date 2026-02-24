@@ -13,6 +13,8 @@ Cart-heavy (ratio=0.18)	0.18	0.81m	19.3Deg
 Balanced (ratio=1.0)	1.0	0.76m	16.6deg
 Angle-heavy (ratio=5.5)	5.5	1.04m	14.8Deg
 The trade-off is real: prioritizing pole angle lets the cart drift; prioritizing cart lets the pole tilt. However, at high overall Q scale (2.2, 2.2), the trade-off disappears - the controller is aggressive enough to protect both simultaneously. The ratio only matters when total gain is low.
+![Iteration 1 trade-off plot](cart_pole_optimal_control/plots/manully_tunned_v3.png)
+
 
 #### Iteration 2 - Bryson's Rule as Baseline Major Failure
 What I tried: 
@@ -23,7 +25,6 @@ Q[i] = 1 / (max_acceptable_deviation[i])**2
 With: x_max=2.5m, x_dot_max=5m/s, theta_max=0.3rad, theta_dot_max=2rad/s
 Q = [0.16, 0.04, 11.11, 0.25]
 What happened: 96% failure rate. Even the best config had cart=1.94m and theta=41Deg - barely surviving.
-
 Why it failed: Bryson's rule hardcoded q_theta / q_x = 69.4x. The controller was so focused on the pole angle that it ignored cart drift. The earthquake kept pushing the cart sideways and the controller barely noticed until it was near the wall.
 
 The lesson: Bryson's Rule is only as good as the tolerances you feed it. Choosing theta_max = 0.3 rad (17Deg) and x_max = 2.5 m (the full physical range) implicitly told the controller that the pole falling is 69 times more catastrophic per unit than the cart drifting. In an earthquake scenario where both are attacked simultaneously, that is wrong.
@@ -52,6 +53,9 @@ x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
 - Max cart displacement: 1.41m within +-2.5m limit
 - Max pole angle: 31.9Deg within 45Deg limit
 - Avg control effort: 23.9N
+![Best tuned run](cart_pole_optimal_control/plots/auto_tunned_v1{4,1,25,4-0.05}.png)
+![Tuning log plot](cart_pole_optimal_control/plots/log.png)
+I am not sure why my stability was consistently low: TODO
 
 #### Key Learnings
 The Q ratio matters more than the Q magnitude.
