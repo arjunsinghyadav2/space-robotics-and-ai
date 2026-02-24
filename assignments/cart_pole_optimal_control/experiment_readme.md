@@ -14,8 +14,6 @@ Balanced (ratio=1.0)	1.0	0.76m	16.6deg
 Angle-heavy (ratio=5.5)	5.5	1.04m	14.8Deg
 The trade-off is real: prioritizing pole angle lets the cart drift; prioritizing cart lets the pole tilt. However, at high overall Q scale (2.2, 2.2), the trade-off disappears - the controller is aggressive enough to protect both simultaneously. The ratio only matters when total gain is low.
 
-assignment connection: This directly addresses the requirement to analyze how Q matrix weights affect different states and document trade-offs between objectives.
-
 #### Iteration 2 - Bryson's Rule as Baseline Major Failure
 What I tried: 
   Replace the arbitrary Q baseline with Bryson's Rule - the principled method:
