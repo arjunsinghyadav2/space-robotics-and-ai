@@ -1,8 +1,7 @@
 ### LQR Controller Tuning Reflection
-Starting Point - The Default Parameters
-The assignment provides a baseline controller with:
+Starting Point - The Default Parameters were part of the repo as is
 Q = diag([1.0, 1.0, 10.0, 10.0])  R = 0.1
-These are arbitrary round numbers. They say nothing about the physical system - a 1m cart error is penalized equally to a 1 rad/s angular velocity error, which makes no physical sense. This was the first problem to address.
+The way I read this is a 1m cart error is penalized equally to a 1 rad/s angular velocity error, which makes no physical sense.
 
 #### Iteration 1 - Uniform Scale Sweep (6,727 runs via GPU)
 What I did: 
@@ -63,13 +62,12 @@ Tightening x_tol is the most powerful lever. Setting x_tol=0.5m raises Q[x] from
 #### Best configuration found:
 x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
 - Q = [4.0, 1.0, 25.0, 4.0]  R = 0.05
-  q_theta / q_x = 6.25x  (vs 69x from naive Bryson)
+- q_theta / q_x = 6.25x  (vs 69x from naive Bryson or manual tunning I tried)
+- Survived 400s (full duration)
+- Max cart displacement: 1.41m within +-2.5m limit
+- Max pole angle: 31.9Deg within 45Deg limit
+- Avg control effort: 23.9N
 
-#### Final performance:
-Survived 400s (full duration)
-Max cart displacement: 1.41m within +-2.5m limit
-Max pole angle: 31.9Deg within 45Deg limit
-Avg control effort: 23.9N
 #### Key Learnings
 The Q ratio matters more than the Q magnitude.
 The ratio q_theta / q_x determines what the controller defends. The naive Bryson ratio of 69x destroys cart stability. The swept optimum of ~6x balances both objectives under earthquake disturbance.
