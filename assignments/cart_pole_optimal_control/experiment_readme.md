@@ -64,19 +64,19 @@ Tightening x_tol is the most powerful lever. Setting x_tol=0.5m raises Q[x] from
 x_tol=0.5m, xdot_tol=1.0, theta_tol=0.2rad, thetadot_tol=0.5
 - Q = [4.0, 1.0, 25.0, 4.0]  R = 0.05
   q_theta / q_x = 6.25x  (vs 69x from naive Bryson)
-Final performance:
 
-Survival: 400s (full duration)
-Max cart displacement: 1.41m (within ±2.5m limit)
-Max pole angle: 31.9Deg (within 45Deg limit)
+#### Final performance:
+Survived 400s (full duration)
+Max cart displacement: 1.41m within +-2.5m limit
+Max pole angle: 31.9Deg within 45Deg limit
 Avg control effort: 23.9N
-Key Learnings
+#### Key Learnings
 The Q ratio matters more than the Q magnitude.
 The ratio q_theta / q_x determines what the controller defends. The naive Bryson ratio of 69x destroys cart stability. The swept optimum of ~6x balances both objectives under earthquake disturbance.
 Tight tolerances = aggressive controller = better performance.
 Counterintuitively, telling the controller keep the cart within 0.5m (even though it physically can't) forces high Q[x] that actually reduces observed cart displacement from 1.9m to 1.4m.
 
-Low R is consistently better.
+**Low R is consistently better.**
 Across all sweeps, lower R (less penalty on control effort) always wins. The system has a 15N earthquake and needs an aggressive response. Penalizing force usage hurts more than it saves.
 Bryson's Rule requires physical insight, not just physical limits.
 Setting tolerances to the hardware limits (x_max=2.5m) gives a controller calibrated for don't hit the wall - too relaxed for disturbance rejection. The tolerances should reflect desired performance, not just survival boundaries. The score function shapes what best means. 
