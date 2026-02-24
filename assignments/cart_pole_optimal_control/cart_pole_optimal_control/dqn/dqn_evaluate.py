@@ -25,7 +25,7 @@ agent.q_network.eval()
 # Earthquake Force Parameters
 num_waves = 5
 freq_range = [0.5, 4.0]  # Frequency range in Hz
-base_amplitude = 0  # Base force amplitude in N
+base_amplitude = 15  # Base force amplitude in N
 env_timestep = 0.02  # Default time step for CartPole environment
 frequencies = np.random.uniform(freq_range[0], freq_range[1], num_waves)
 phase_shifts = np.random.uniform(0, 2 * np.pi, num_waves)

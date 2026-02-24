@@ -81,18 +81,15 @@ for episode in range(1, num_episodes + 1):
 
         done = terminated or truncated or violated
 
-        # Extract key values from next_state
-        cart_position = abs(next_state[0])  # Cart position (closer to 0 is better)
-        pole_angle = abs(next_state[2])  # Pole angle (smaller is better)
-
         # **Custom Reward Function**
         if done:
-            reward = -10.0  # Strong death penalty so the agent learns to survive
+            reward = -10.0  # Strong death penalty
         else:
-            base_reward = 1.0  # Small reward for surviving
-            pole_stability = 1.0 - (2.5 * pole_angle)  # Penalize pole angle deviation
-            cart_stability = 1.0 - (0.5 * cart_position)  # Penalize cart displacement
-            reward = base_reward + pole_stability + cart_stability
+            alive_reward = 1.0
+            angle_bonus = 0.5 * (1.0 - abs(next_state[2]) / env.unwrapped.theta_threshold_radians)
+            position_bonus = 0.5 * (1.0 - abs(next_state[0]) / env.unwrapped.x_threshold)
+            velocity_penalty = -0.1 * abs(next_state[3])  # Discourage oscillation
+            reward = alive_reward + angle_bonus + position_bonus + velocity_penalty
 
         # Append earthquake force to the next state
         next_state_with_force = np.append(next_state, earthquake_force)
