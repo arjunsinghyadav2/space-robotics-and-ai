@@ -1,4 +1,5 @@
 ### LQR Controller Tuning Reflection
+[![DQN CartPole Earthquake Evaluation](https://img.youtube.com/vi/tHVKpqZNj6w/0.jpg)](https://youtu.be/tHVKpqZNj6w)
 Starting Point - The Default Parameters were part of the repo as is
 Q = diag([1.0, 1.0, 10.0, 10.0])  R = 0.1
 The way I read this is a 1m cart error is penalized equally to a 1 rad/s angular velocity error, which makes no physical sense.
@@ -105,4 +106,5 @@ DQN has 2 discrete actions (push left/right with fixed force) against a 15N eart
   max_cart: 0.47-0.68m, well within 2.4m and nowhere close to cart limit
 The agent dies exclusively from the pole angle. The 12deg theta threshold. And the reward function reinforces this asymmetry, angle_bonus normalizes by ~0.21 rad, so small angle changes create huge reward gradients, while position_bonus normalizes by 2.4m, so the cart just drift freely.
 
-For comparison with your LQR thresholds which has 2.5m cart limit, 45deg pole limits. The DQN is operating under a 3.75x tighter angle constraint than LQR. That's not a 1:1 comparison.
+### Conclusion:
+The LQR performance is far superior to DQN, we find that R param in LQR performs with greater stability and robustness at lower values (0.05 to 0.2), the x  For comparison with your LQR thresholds which has 2.5m cart limit, 45deg pole limits. The DQN is operating under a 3.75x tighter angle constraint than LQR. That's not a 1:1 comparison. I was able to match those limits and yet found that the RL doesnt perform as well in continous space with descrete action +-10N left or right force against a 15N earthquake force. So a future step might be to add a more broader action set where we have a continous force of arbitary magnitude learned via the policy to work against and balance the cart.
