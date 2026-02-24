@@ -20,6 +20,9 @@ else:
 
 # Initialize environment
 env = gym.make("CartPole-v1")
+# Aligned RL termination limits with LQR assignment limits for fair comparison.
+env.unwrapped.x_threshold = 2.5
+env.unwrapped.theta_threshold_radians = np.deg2rad(45.0)
 state_dim = env.observation_space.shape[0] + 1  # Now 5 states (4 original + 1 earthquake force)
 action_dim = env.action_space.n
 
@@ -44,7 +47,7 @@ def generate_earthquake_force(time):
     return force
 
 # Training Loop
-num_episodes = 15000
+num_episodes = 10000
 total_rewards = []
 steps_per_episode = []
 epsilon_values = []

@@ -8,8 +8,12 @@ import csv
 import json
 from pathlib import Path
 
-# Initialize environment (headless by default).
-env = gym.make("CartPole-v1")
+# Initialize environment.
+# Set render_mode="human" if you want a live pygame window.
+env = gym.make("CartPole-v1", render_mode=None)
+# Align RL termination limits with LQR assignment limits for fair comparison.
+env.unwrapped.x_threshold = 2.5
+env.unwrapped.theta_threshold_radians = np.deg2rad(45.0)
 state_dim = env.observation_space.shape[0] + 1  # 4 original + earthquake force
 action_dim = env.action_space.n
 
